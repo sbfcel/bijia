@@ -6,6 +6,7 @@ import {
   SearchOutlined,
   ShoppingOutlined,
   ScheduleOutlined,
+  KeyOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -19,6 +20,7 @@ const menuItems = [
   { key: '/keywords', icon: <SearchOutlined />, label: '关键字管理' },
   { key: '/products', icon: <ShoppingOutlined />, label: '商品监控' },
   { key: '/tasks', icon: <ScheduleOutlined />, label: '采集任务' },
+  { key: '/accounts', icon: <KeyOutlined />, label: '平台账号' },
 ]
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {

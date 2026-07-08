@@ -9,6 +9,7 @@ import KeywordListPage from './pages/KeywordListPage'
 import KeywordFormPage from './pages/KeywordFormPage'
 import ProductListPage from './pages/ProductListPage'
 import TaskListPage from './pages/TaskListPage'
+import AccountListPage from './pages/AccountListPage'
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
                   <Route path="/keywords/:id" element={<KeywordFormPage />} />
                   <Route path="/products" element={<ProductListPage />} />
                   <Route path="/tasks" element={<TaskListPage />} />
+                  <Route path="/accounts" element={<AccountListPage />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </AppLayout>

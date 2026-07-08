@@ -76,6 +76,20 @@ export async function runMigrations() {
     table.timestamp('completed_at').nullable()
   })
 
+  if (!(await db.schema.hasTable('platform_accounts'))) {
+    await db.schema.createTable('platform_accounts', (table) => {
+      table.increments('id').primary()
+      table.integer('user_id').notNullable().references('id').inTable('users')
+      table.integer('platform_id').notNullable().references('id').inTable('platforms')
+      table.string('account_name').notNullable()
+      table.text('cookies').nullable()
+      table.string('status').defaultTo('active')
+      table.timestamp('last_login_at').nullable()
+      table.timestamp('created_at').defaultTo(db.fn.now())
+      table.timestamp('updated_at').defaultTo(db.fn.now())
+    })
+  }
+
   console.log('Migrations completed.')
 }
 

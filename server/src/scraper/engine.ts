@@ -51,6 +51,21 @@ export async function scrapeKeyword(keywordId: number): Promise<ScrapeResult[]> 
       const browserInstance = await getBrowser()
       const page = await browserInstance.newPage()
 
+      const account = await db('platform_accounts')
+        .where({ user_id: keyword.user_id, platform_id: plat.id, status: 'active' })
+        .first()
+
+      if (account && account.cookies) {
+        try {
+          const cookies = JSON.parse(account.cookies)
+          const cookieEntries: { name: string; value: string; domain: string; path: string }[] =
+            Array.isArray(cookies) ? cookies : Object.entries(cookies).map(([name, value]) => ({ name, value: String(value), domain: new URL(searchUrl).hostname, path: '/' }))
+          await page.context().addCookies(cookieEntries)
+        } catch {
+          // cookie 解析失败则跳过
+        }
+      }
+
       await page.goto(searchUrl, {
         waitUntil: 'domcontentloaded',
         timeout: config.scrapeTimeout,
