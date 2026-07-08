@@ -7,6 +7,7 @@ import productRoutes from './routes/products'
 import exportRoutes from './routes/export'
 import taskRoutes from './routes/tasks'
 import accountRoutes from './routes/accounts'
+import antiDetectRoutes from './routes/anti-detect'
 
 const app = express()
 
@@ -20,6 +21,7 @@ app.use('/api/products', productRoutes)
 app.use('/api/export', exportRoutes)
 app.use('/api/tasks', taskRoutes)
 app.use('/api/accounts', accountRoutes)
+app.use('/api/anti-detect', antiDetectRoutes)
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() })

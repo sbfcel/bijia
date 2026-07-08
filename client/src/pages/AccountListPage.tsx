@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Table, Button, Modal, Form, Input, Select, Tag, Space, message, Popconfirm } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, KeyOutlined } from '@ant-design/icons'
+import { Table, Button, Modal, Form, Input, Select, Tag, Space, message, Popconfirm, Card, Row, Col, Tooltip, Descriptions } from 'antd'
+import {
+  PlusOutlined, EditOutlined, DeleteOutlined,
+  SafetyOutlined, ThunderboltOutlined, ClockCircleOutlined,
+  ReloadOutlined, CheckCircleOutlined,
+} from '@ant-design/icons'
 import api from '../services/api'
 
 interface Platform {
@@ -21,11 +25,22 @@ interface Account {
   created_at: string
 }
 
+interface AntiDetectPlatform {
+  code: string
+  name: string
+  riskLevel: string
+  riskColor: string
+  riskDesc: string
+  config: { delayRange: string; maxRetries: number; scrollPages: number }
+  measures: string[]
+}
+
 const colors: Record<string, string> = { jd: 'red', pdd: 'volcano', douyin: 'purple', tmall: 'blue' }
 
 export default function AccountListPage() {
   const [accounts, setAccounts] = useState<Account[]>([])
   const [platforms, setPlatforms] = useState<Platform[]>([])
+  const [antiDetectConfigs, setAntiDetectConfigs] = useState<AntiDetectPlatform[]>([])
   const [loading, setLoading] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Account | null>(null)
@@ -43,6 +58,7 @@ export default function AccountListPage() {
   useEffect(() => {
     fetchAccounts()
     api.get('/platforms').then((res) => setPlatforms(res.data)).catch(() => {})
+    api.get('/anti-detect/platforms').then((res) => setAntiDetectConfigs(res.data)).catch(() => {})
   }, [fetchAccounts])
 
   const handleOpenModal = (account?: Account) => {
@@ -89,8 +105,50 @@ export default function AccountListPage() {
 
   return (
     <div>
+      <h2 style={{ marginBottom: 16 }}>平台反爬风控配置</h2>
+      <Row gutter={[16, 16]} style={{ marginBottom: 32 }}>
+        {antiDetectConfigs.map((cfg) => (
+          <Col span={6} key={cfg.code}>
+            <Card
+              size="small"
+              title={
+                <Space>
+                  <SafetyOutlined />
+                  <Tag color={colors[cfg.code]}>{cfg.name}</Tag>
+                  <Tag color={cfg.riskColor}>{'风控等级: ' + cfg.riskLevel}</Tag>
+                </Space>
+              }
+              style={{ height: '100%' }}
+            >
+              <Descriptions column={1} size="small" colon={false}>
+                <Descriptions.Item label={<><ThunderboltOutlined /> 检测手段</>}>
+                  <span style={{ fontSize: 12 }}>{cfg.riskDesc}</span>
+                </Descriptions.Item>
+                <Descriptions.Item label={<><ClockCircleOutlined /> 请求间隔</>}>
+                  {cfg.config.delayRange}
+                </Descriptions.Item>
+                <Descriptions.Item label={<><ReloadOutlined /> 重试次数</>}>
+                  {cfg.config.maxRetries} 次
+                </Descriptions.Item>
+              </Descriptions>
+              <div style={{ marginTop: 8 }}>
+                {cfg.measures.slice(0, 4).map((m, i) => (
+                  <Tag key={i} icon={<CheckCircleOutlined />} color="processing" style={{ marginBottom: 4, fontSize: 11 }}>
+                    {m}
+                  </Tag>
+                ))}
+              </div>
+              {cfg.measures.length > 4 && (
+                <Tooltip title={cfg.measures.slice(4).join('、')}>
+                  <Tag style={{ fontSize: 11, cursor: 'pointer' }}>+{cfg.measures.length - 4} 项更多</Tag>
+                </Tooltip>
+              )}
+            </Card>
+          </Col>
+        ))}
+      </Row>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h2>平台账号管理</h2>
+        <h2>平台账号凭证</h2>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenModal()}>
           添加账号
         </Button>

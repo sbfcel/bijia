@@ -46,10 +46,13 @@ export default function TaskListPage() {
           { title: '平台', dataIndex: 'platform_name', width: 80, render: (v: string, r: TaskLog) => <Tag color={colors[r.platform_code]}>{v}</Tag> },
           {
             title: '状态', dataIndex: 'status', width: 80,
-            render: (v: string) =>
-              v === 'success'
-                ? <Tag icon={<CheckCircleOutlined />} color="success">成功</Tag>
-                : <Tag icon={<CloseCircleOutlined />} color="error">失败</Tag>,
+            render: (v: string) => {
+              if (v === 'success')
+                return <Tag icon={<CheckCircleOutlined />} color="success">成功</Tag>
+              if (v === 'blocked')
+                return <Tag icon={<CloseCircleOutlined />} color="warning">被拦截</Tag>
+              return <Tag icon={<CloseCircleOutlined />} color="error">失败</Tag>
+            },
           },
           { title: '商品数量', dataIndex: 'product_count', width: 100 },
           { title: '开始时间', dataIndex: 'started_at', width: 160 },
