@@ -181,17 +181,152 @@ bijia/
 
 ### 2. 平台账号配置
 
-在 **平台账号** 页面，为各平台配置登录 Cookie：
+在 **平台账号** 页面，为各平台配置登录 Cookie 后，采集引擎将在搜索前注入登录态，获取更完整的商品数据。
 
-1. 在浏览器中登录目标平台
-2. 按 F12 打开开发者工具 → Application → Cookies
-3. 复制必要的 Cookie，以 JSON 数组格式填入：
+#### 获取 Cookie 的三种方式
 
-```json
-[{"name":"token","value":"xxx","domain":".jd.com","path":"/"},{"name":"pin","value":"xxx","domain":".jd.com","path":"/"}]
+**方式一：浏览器开发者工具（推荐，最通用）**
+
+1. 用 Chrome/Edge 浏览器正常登录目标平台
+2. 按 `F12` 打开开发者工具
+3. 切换到 **Application**（应用程序）标签页
+4. 左侧 Storage → Cookies → 选择目标域名
+5. 找到登录相关的关键字段，逐个记录 Name 和 Value
+6. 按各平台格式组装 JSON 填入系统
+
+**方式二：EditThisCookie 浏览器插件**
+
+1. 安装 [EditThisCookie](https://www.editthiscookie.com/) 浏览器扩展
+2. 登录目标平台后，点击插件图标
+3. 点击导出按钮（Export），自动复制全部 Cookie 为 JSON 数组
+4. 粘贴到系统中
+
+**方式三：Playwright 脚本自动提取**
+
+在 `server/` 目录下创建以下脚本，运行后自动登录并保存 Cookie：
+
+```javascript
+// save-cookies.js - 保存平台 Cookie
+const { chromium } = require('playwright');
+
+(async () => {
+  const browser = await chromium.launch({ headless: false });
+  const page = await browser.newPage();
+
+  // 修改为目标平台登录页
+  await page.goto('https://passport.jd.com/new/login.aspx');
+  console.log('请在浏览器中完成登录，登录后按回车继续...');
+
+  // 等待手动输入
+  await new Promise(resolve => process.stdin.once('data', resolve));
+
+  const cookies = await page.context().cookies();
+  console.log(JSON.stringify(cookies, null, 2));
+
+  await browser.close();
+})();
 ```
 
-配置 Cookie 后，采集引擎将在搜索前注入登录态，获取更完整的商品数据。
+运行：`cd server && node save-cookies.js`
+
+#### 各平台关键 Cookie 字段
+
+**京东 (jd.com)**
+
+| Cookie 字段 | 说明             | 是否必需 |
+|-------------|------------------|----------|
+| pt_key      | 登录凭证令牌     | 是       |
+| pt_pin      | 用户标识         | 是       |
+| pwdt_id     | 设备标识         | 推荐     |
+| TrackID     | 跟踪标识         | 可选     |
+| thor        | 风控令牌         | 推荐     |
+
+JSON 格式示例：
+```json
+[
+  {"name":"pt_key","value":"app_open_xxxxxxxx","domain":".jd.com","path":"/"},
+  {"name":"pt_pin","value":"your_username","domain":".jd.com","path":"/"},
+  {"name":"pwdt_id","value":"xxx","domain":".jd.com","path":"/"},
+  {"name":"TrackID","value":"xxx","domain":".jd.com","path":"/"}
+]
+```
+
+**拼多多 (yangkeduo.com)**
+
+| Cookie 字段       | 说明           | 是否必需 |
+|-------------------|----------------|----------|
+| PDDAccessToken    | 登录访问令牌   | 是       |
+| UID               | 用户唯一标识   | 是       |
+| JSESSIONID        | 会话标识       | 推荐     |
+| api_uid           | API 用户标识   | 推荐     |
+| pdd_user_id       | 用户数字 ID    | 可选     |
+
+JSON 格式示例：
+```json
+[
+  {"name":"PDDAccessToken","value":"xxxxxxxx","domain":".yangkeduo.com","path":"/"},
+  {"name":"UID","value":"xxxx","domain":".yangkeduo.com","path":"/"},
+  {"name":"JSESSIONID","value":"xxxx","domain":".yangkeduo.com","path":"/"},
+  {"name":"api_uid","value":"xxxx","domain":".yangkeduo.com","path":"/"}
+]
+```
+
+> 注意：拼多多反爬等级较高，Cookie 有效期较短。建议使用移动端域名 `mobile.yangkeduo.com` 的 Cookie。
+
+**抖音/抖音商城 (jinritemai.com)**
+
+| Cookie 字段         | 说明         | 是否必需 |
+|---------------------|--------------|----------|
+| sessionid           | 会话标识     | 是       |
+| sessionid_ss        | 安全会话     | 是       |
+| passport_csrf_token | CSRF 令牌    | 是       |
+| sid_guard           | 会话保护     | 推荐     |
+| odin_tt             | 设备指纹     | 推荐     |
+| tt_webid            | Web 设备 ID  | 推荐     |
+
+JSON 格式示例：
+```json
+[
+  {"name":"sessionid","value":"xxxxxxxx","domain":".jinritemai.com","path":"/"},
+  {"name":"sessionid_ss","value":"xxxxxxxx","domain":".jinritemai.com","path":"/"},
+  {"name":"passport_csrf_token","value":"xxxxxxxx","domain":".jinritemai.com","path":"/"},
+  {"name":"sid_guard","value":"xxxx","domain":".jinritemai.com","path":"/"},
+  {"name":"odin_tt","value":"xxxx","domain":".jinritemai.com","path":"/"}
+]
+```
+
+> 注意：抖音风控等级极高，Cookie + 设备指纹联动验证。如果采集频繁触发验证码，可尝试在 `server/src/scraper/anti-detect.ts` 中将 delayMax 提高到 12000ms。
+
+**天猫/淘宝 (tmall.com / taobao.com)**
+
+| Cookie 字段  | 说明         | 是否必需 |
+|--------------|--------------|----------|
+| _tb_token_   | 令牌标识     | 是       |
+| cookie2      | 用户标识     | 是       |
+| t            | 登录令牌     | 是       |
+| unb          | 用户信息     | 推荐     |
+| _m_h5_tk     | H5 令牌      | 推荐     |
+| _m_h5_tk_enc | H5 加密令牌  | 推荐     |
+
+JSON 格式示例：
+```json
+[
+  {"name":"_tb_token_","value":"xxxxxxxx","domain":".tmall.com","path":"/"},
+  {"name":"cookie2","value":"xxxxxxxx","domain":".tmall.com","path":"/"},
+  {"name":"t","value":"xxxxxxxx","domain":".tmall.com","path":"/"},
+  {"name":"unb","value":"xxxx","domain":".tmall.com","path":"/"},
+  {"name":"_m_h5_tk","value":"xxxx","domain":".tmall.com","path":"/"},
+  {"name":"_m_h5_tk_enc","value":"xxxx","domain":".tmall.com","path":"/"}
+]
+```
+
+> 注意：天猫/淘宝与阿里巴巴生态共享登录态，Cookie 有效期通常 24 小时左右，需定期更新。
+
+#### Cookie 维护建议
+
+- 各平台 Cookie 有效期不同（快的数小时，慢的数天），建议每周检查更新
+- 采集频率过高会加速 Cookie 失效，已内置反爬延迟策略降低此风险
+- 可在"采集任务"页面查看日志，状态为"被拦截"时优先检查 Cookie 是否过期
 
 ### 3. 创建关键字监控
 

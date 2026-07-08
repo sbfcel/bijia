@@ -118,10 +118,10 @@ export const PLATFORM_ANTI_DETECT: Record<string, AntiDetectConfig> = {
     respectRobotsTxt: true,
   },
   douyin: {
-    delayMin: 4000,
-    delayMax: 7000,
+    delayMin: 5000,
+    delayMax: 12000,
     maxRetries: 2,
-    retryBaseDelay: 8000,
+    retryBaseDelay: 10000,
     scrollPages: 5,
     respectRobotsTxt: true,
   },

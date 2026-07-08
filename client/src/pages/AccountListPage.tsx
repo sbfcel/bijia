@@ -7,6 +7,25 @@ import {
 } from '@ant-design/icons'
 import api from '../services/api'
 
+const COOKIE_HINTS: Record<string, { fields: string; example: string }> = {
+  jd: {
+    fields: '必需: pt_key, pt_pin | 推荐: pwdt_id, TrackID, thor',
+    example: '[{"name":"pt_key","value":"xxx","domain":".jd.com","path":"/"},{"name":"pt_pin","value":"xxx","domain":".jd.com","path":"/"}]',
+  },
+  pdd: {
+    fields: '必需: PDDAccessToken, UID | 推荐: JSESSIONID, api_uid, pdd_user_id',
+    example: '[{"name":"PDDAccessToken","value":"xxx","domain":".yangkeduo.com","path":"/"},{"name":"UID","value":"xxx","domain":".yangkeduo.com","path":"/"}]',
+  },
+  douyin: {
+    fields: '必需: sessionid, sessionid_ss, passport_csrf_token | 推荐: sid_guard, odin_tt, tt_webid',
+    example: '[{"name":"sessionid","value":"xxx","domain":".jinritemai.com","path":"/"},{"name":"sessionid_ss","value":"xxx","domain":".jinritemai.com","path":"/"},{"name":"passport_csrf_token","value":"xxx","domain":".jinritemai.com","path":"/"}]',
+  },
+  tmall: {
+    fields: '必需: _tb_token_, cookie2, t | 推荐: unb, _m_h5_tk, _m_h5_tk_enc',
+    example: '[{"name":"_tb_token_","value":"xxx","domain":".tmall.com","path":"/"},{"name":"cookie2","value":"xxx","domain":".tmall.com","path":"/"},{"name":"t","value":"xxx","domain":".tmall.com","path":"/"}]',
+  },
+}
+
 interface Platform {
   id: number
   code: string
@@ -200,16 +219,29 @@ export default function AccountListPage() {
             <Input placeholder="如：运营账号1" />
           </Form.Item>
           <Form.Item
-            name="cookies"
-            label="Cookie 凭证"
-            help={
-              <span>
-                浏览器中按 F12 → Application → Cookies，复制所需 Cookie 的 JSON 数组。<br />
-                格式示例：<code>{'[{"name":"token","value":"xxx","domain":".jd.com","path":"/"}]'}</code>
-              </span>
-            }
+            noStyle
+            shouldUpdate={(prev, cur) => prev.platform_id !== cur.platform_id}
           >
-            <Input.TextArea rows={6} placeholder='[{"name":"token","value":"xxx","domain":".example.com","path":"/"}]' />
+            {({ getFieldValue }) => {
+              const pid = getFieldValue('platform_id')
+              const plat = platforms.find((p) => p.id === pid)
+              const hint = plat ? COOKIE_HINTS[plat.code] : null
+              return (
+                <Form.Item
+                  name="cookies"
+                  label="Cookie 凭证"
+                  help={
+                    <span>
+                      浏览器中按 F12 → Application → Cookies，复制所需字段。<br />
+                      {hint && <><strong>{plat!.name}关键字段：</strong>{hint.fields}<br /></>}
+                      格式示例：<code>{hint ? hint.example : '[{"name":"token","value":"xxx","domain":".example.com","path":"/"}]'}</code>
+                    </span>
+                  }
+                >
+                  <Input.TextArea rows={6} placeholder={hint ? hint.example : '[{"name":"token","value":"xxx","domain":".example.com","path":"/"}]'} />
+                </Form.Item>
+              )
+            }}
           </Form.Item>
         </Form>
       </Modal>
